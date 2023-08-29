@@ -32,7 +32,7 @@ to get `[filename].csv` and `[filename].npz`
 `naip_downloader.py` uses centroids in the csv file from the previous method in `saved/[filename].csv`. 
 
 Run command: 
-> python naip_Downloader.py
+> python naip_downloader.py
 
 to get images at scale, stored in directory `images`
 
