@@ -20,7 +20,7 @@ Use the following comand to extract osm files.
 
 ---
 ## Step-1: Locate Multilabel Image
-class_functions.py and efficient_v2.py are used for getting image centroids and segmentation. The input osm file needs to be in the same folder.
+`class_functions.py` and `efficient_v2.py` are used for getting image centroids and segmentation. The input osm file needs to be in the same folder.
 
 Run command: 
 > python efficient_v2.py -i [input filename]
