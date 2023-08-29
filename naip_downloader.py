@@ -1,14 +1,9 @@
 import random
 import urllib.request
 from shapely.geometry import shape, Point
-from torchvision.datasets.utils import download_and_extract_archive
 from skimage.exposure import rescale_intensity
-from rasterio.transform import Affine
-import urllib3
-import rasterio
 import numpy as np
 import ee
-import pandas as pd
 import argparse
 import csv
 import json
