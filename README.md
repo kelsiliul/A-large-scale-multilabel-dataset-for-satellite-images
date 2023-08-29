@@ -10,9 +10,10 @@ The code has three steps:
 
 Download raw osm files using `download_osms.py`
  > python download_osms.py
+
 This command will download all osm files in contiguous unites states. So 48 states+D.C. (no Hawaii and Alaska).
 
-:warning: When testing do not download all states. Instead edit the list in variable `states` before downloading.
+:warning: When testing do not download all states. Instead edit the list in variable `states` before downloading. Also use a smaller state's osm file such as Delaware or Vermont to first test.
 
 Use the following comand to extract osm files.
 > bash unzip_osm.sh
