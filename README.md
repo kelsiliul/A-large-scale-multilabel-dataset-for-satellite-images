@@ -12,7 +12,7 @@ Download raw osm files using `download_osms.py`
  > python download_osms.py
 This command will download all osm files in contiguous unites states. So 48 states+D.C. (no Hawaii and Alaska).
 
-:warning: When testing do not download all states. Instead edit the list in variable states before downloading.
+:warning: When testing do not download all states. Instead edit the list in variable `states` before downloading.
 
 Use the following comand to extract osm files.
 > bash unzip_osm.sh
@@ -21,13 +21,14 @@ Use the following comand to extract osm files.
 ## Step-1: Locate Multilabel Image
 class_functions.py and efficient_v2.py are used for getting image centroids and segmentation. The input osm file needs to be in the same folder.
 
-Run command: python efficient_v2.py -i [input filename]
+Run command: 
+> python efficient_v2.py -i [input filename]
 
-to get [filename].csv and [filename].npz
+to get `[filename].csv` and `[filename].npz`
 
 ---
 ## Step-2: Download Images
-naip_downloader.py uses centroids in the csv file from the previous method in 'coords/[filename]'. 
+`naip_downloader.py` uses centroids in the csv file from the previous method in `saved/[filename].csv`. 
 
 Run command: 
 > python naip_Downloader.py
