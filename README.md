@@ -28,7 +28,12 @@ Run command:
 to get `[filename].csv` and `[filename].npz`
 
 ---
-## Step-2: Download Images
+## Step-2: Install gcloud and Earth Engine Authentication
+You can follow this like to install gcloud and complete earth engine authentication: https://developers.google.com/earth-engine/guides/python_install#authentication
+
+
+---
+## Step-3: Download Images
 `naip_downloader.py` uses centroids in the csv file from the previous method in `saved/[filename].csv`. 
 
 Run command: 
