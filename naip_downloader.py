@@ -16,6 +16,7 @@ import time
 from datetime import datetime, timedelta
 import warnings
 warnings.simplefilter('ignore', UserWarning)
+from tqdm import tqdm
 
 
 class GeoSampler:
@@ -51,21 +52,52 @@ def get_collection():
 
 
 def filter_collection(collection, coords, period=None, halfwidth=0.005):
+    print("filtering collection")
+    # Calculate the bounding box coordinates
+    min_lon = coords[0] - halfwidth
+    max_lon = coords[0] + halfwidth
+    min_lat = coords[1] - halfwidth
+    max_lat = coords[1] + halfwidth
+
+    # Create a bounding box geometry
+    bounding_box = ee.Geometry.Rectangle([min_lon, min_lat, max_lon, max_lat])
+
+    # Start with the initial collection
     filtered = collection
+
     if period is not None:
         filtered = filtered.filterDate(*period)  # filter time
-    filtered = filtered.filterBounds(ee.Geometry.Point(
-        [coords[0]-halfwidth, coords[1]-halfwidth]))  # filter region
-    filtered = filtered.filterBounds(ee.Geometry.Point(
-        [coords[0]-halfwidth, coords[1]+halfwidth]))  # filter region
-    filtered = filtered.filterBounds(ee.Geometry.Point(
-        [coords[0]+halfwidth, coords[1]-halfwidth]))  # filter region
-    filtered = filtered.filterBounds(ee.Geometry.Point(
-        [coords[0]+halfwidth, coords[1]+halfwidth]))  # filter region
+        print("filtered by date")
+
+    # Apply the bounding box filter
+    print("applying bounding box filter")
+    filtered = filtered.filterBounds(bounding_box)
+    print("filtered by bounds")
+
     if filtered.size().getInfo() == 0:
+        print("filtered size is 0")
         raise ee.EEException(
             f'ImageCollection.filter: No suitable images found in ({coords[1]:.4f}, {coords[0]:.4f}) between {period[0]} and {period[1]}.')
     return filtered
+
+
+# def filter_collection(collection, coords, period=None, halfwidth=0.005):
+#     filtered = collection
+#     if period is not None:
+#         filtered = filtered.filterDate(*period)  # filter time
+#     filtered = filtered.filterBounds(ee.Geometry.Point(
+#         [coords[0]-halfwidth, coords[1]-halfwidth]))  # filter region
+#     filtered = filtered.filterBounds(ee.Geometry.Point(
+#         [coords[0]-halfwidth, coords[1]+halfwidth]))  # filter region
+#     filtered = filtered.filterBounds(ee.Geometry.Point(
+#         [coords[0]+halfwidth, coords[1]-halfwidth]))  # filter region
+#     filtered = filtered.filterBounds(ee.Geometry.Point(
+#         [coords[0]+halfwidth, coords[1]+halfwidth]))  # filter region
+#     if filtered.size().getInfo() == 0:
+#         print("filtered size is 0")
+#         raise ee.EEException(
+#             f'ImageCollection.filter: No suitable images found in ({coords[1]:.4f}, {coords[0]:.4f}) between {period[0]} and {period[1]}.')
+#     return filtered
 
 
 def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=None):
@@ -74,10 +106,9 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
     if bands is None:
         bands = RGB_BANDS
     collection = collection.sort('system:time_start', False)
-    # print("the image should appear")
-    # thanks to shitty ee api
+    
     collection = collection.toList(collection.size())
-
+    print("created collection list")
     region = ee.Geometry.Rectangle(
         [[coords[0]-halfwidth, coords[1]-halfwidth], [coords[0]+halfwidth, coords[1]+halfwidth]])
     for ind in range(collection.size().getInfo()):
@@ -87,6 +118,7 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
         # urllib.request.urlretrieve(url, join(save_path, fname.split('/')[-1].split('.')[0]+'.tiff'))
         url = patch.getThumbURL({'bands': bands, 'scale': 1, 'format': 'jpg',
                                 'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
+        print("url:",url)
         urllib.request.urlretrieve(url, join(save_path, fname.split('/')[-1]))
         # print("the image shoudl appearaa")
         # get only the first one
@@ -105,12 +137,12 @@ def get_period(date, days=10):
 
 
 def get_patches(collection, coords, startdate, enddate, debug=False, halfwidth=0.005, **kwargs):
+    print("starting to get patches")
     period = (startdate, enddate)
     try:
         filtered_collection = filter_collection(
             collection, coords, period, halfwidth=halfwidth)
         patches = get_patch(filtered_collection, coords, **kwargs)
-        # print("patches")
     except Exception as e:
         if debug:
             print(e)
@@ -128,6 +160,9 @@ class Counter:
         with self.lock:
             self.value += delta
             return self.value
+        
+
+
 
 
 if __name__ == '__main__':
@@ -179,11 +214,11 @@ if __name__ == '__main__':
         if not isdir(join(save_path, file.split('.')[0])):
             mkdir(join(save_path, file.split('.')[0]))
         rows = []
-        with open(join(idir, file)) as ifd:
+        with open(join(idir, file),encoding='cp1252') as ifd:
             reader = csv.reader(ifd, delimiter=',')
             for i, row in enumerate(reader):
                 if row!=[]:
-                    print(i)
+                    # print(i)
                     # print(file)
                     halfwidth=float(row[0])**(.5)
                     if float(row[0]) > cutoff:
@@ -193,16 +228,30 @@ if __name__ == '__main__':
 
         def worker(idx):
             pts = sampler.sample_point(idx)
-            patches = get_patches(collection, pts[1], pts[2], pts[3], bands=RGB_BANDS, scale=scale, debug=args.debug, save_path=join(
-                save_path, file.split('.')[0]), fname=pts[0], halfwidth=halfwidth)
+            patches = get_patches(collection, pts[1], pts[2], pts[3], bands=RGB_BANDS, scale=scale, debug=args.debug, save_path=join(save_path, file.split('.')[0]), fname=pts[0], halfwidth=halfwidth)
             return
+
         print(file, len(sampler))
         indices = range(len(sampler))
+        print("num workers",args.num_workers)
+        for i in tqdm(range(2)):
+            # print(i)
+            worker(i)
+        exit()
 
         if args.num_workers == 0:
-            for i in indices:
-                worker(i)
-                break
-        else:
-            with Pool(args.num_workers) as p:
-                p.map(worker, indices)
+            print("starting")
+            exit()
+            for i in tqdm(range(len(sampler))):
+
+                print(i)
+                # worker(i)
+                exit()
+
+            # for i in tqdm(indices):
+            #     worker(i)
+            #     # break
+            print("completed")
+        # else:
+        #     with Pool(args.num_workers) as p:
+        #         p.map(worker, indices)

@@ -1,0 +1,6 @@
+classes/
+coords/
+images/
+osms/
+*.csv
+*.npz
