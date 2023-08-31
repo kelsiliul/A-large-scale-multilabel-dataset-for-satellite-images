@@ -1,26 +1,21 @@
 import ee
-# ee.Authenticate()
-ee.Initialize()
-region = ee.Geometry.Rectangle([[-75.5908736080981, 39.5688793909274],[-75.5808736080981, 39.578879390927405]])
-# Load a Landsat image.
-img = ee.ImageCollection('USDA/NAIP/DOQQ').getRegion(region,scale=1)
-print(img.getInfo().get('features')[0].get('id'))
-# Print image object WITHOUT call to getInfo(); prints serialized request instructions.
-# print(img)
+import urllib.request
 
-# region = ee.Geometry.Rectangle([[-75.5908736080981, 39.5688793909274],[-75.5808736080981, 39.578879390927405]])
+ee.Initialize()  
+# Collection
+col = ee.ImageCollection('USDA/NAIP/DOQQ').select(['R','G'])
+# Region using coordinates
+region = ee.Geometry.Rectangle([[-75.5870736080981, 39.572679390927405],[-75.5846736080981, 39.5750793909274]],bands=['R','G','B','N'])
 
+# Get image using region
+Region = ee.Image(col.getRegion(region,scale=20))
+# complete path name
+img = ee.Image('USDA/NAIP/DOQQ/'+Region.getInfo()[1820][0])
 
-# print('Image collection from a string:', img.getRegion(region, scale=20))
+# get url for img
+url = img.getThumbURL({'bands': ['R','G','B'], 'scale': 1, 'format': 'jpg',
+                                'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
+print(url)
 
-# img1 = ee.Image('COPERNICUS/S2_SR/20170328T083601_20170328T084228_T35RNK')
-# img2 = ee.Image('COPERNICUS/S2_SR/20170328T083601_20170328T084228_T35RNL')
-# img3 = ee.Image('COPERNICUS/S2_SR/20170328T083601_20170328T084228_T35RNM')
-# print('Image collection from a list of images:',
-#       ee.ImageCollection([img1, img2, img3]))
-
-# print('Image collection from a single image:',
-#       ee.ImageCollection(img1).getInfo())
-
-# Print image object WITH call to getInfo(); prints image metadata.
-# print(img.getInfo())
+# download img
+urllib.request.urlretrieve(url, 'test.jpg')
