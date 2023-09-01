@@ -1,6 +1,6 @@
 import random
 import urllib.request
-from shapely.geometry import shape, Point
+# from shapely.geometry import shape, Point
 from skimage.exposure import rescale_intensity
 import numpy as np
 import ee
@@ -235,8 +235,6 @@ if __name__ == '__main__':
                 reader = csv.reader(ifd, delimiter=',')
                 for i, row in enumerate(reader):
                     if row!=[]:
-                        # print(i)
-                        # print(file)
                         halfwidth=float(row[0])**(.5)
                         if float(row[0]) > cutoff:
                             rows.append([None, None, None, float(row[2]), float(row[1]), '_'.join(
@@ -253,25 +251,11 @@ if __name__ == '__main__':
 
         print(file, len(sampler))
         indices = range(len(sampler))
-        \
-        for i in tqdm(range(5)):
-            # print(i)
-            worker(i)
-        exit()
 
         if args.num_workers == 0:
-            print("starting")
-            exit()
             for i in tqdm(range(len(sampler))):
-
-                print(i)
-                # worker(i)
-                exit()
-
-            # for i in tqdm(indices):
-            #     worker(i)
-            #     # break
+                worker(i)
             print("completed")
-        # else:
-        #     with Pool(args.num_workers) as p:
-        #         p.map(worker, indices)
+        else:
+            with Pool(args.num_workers) as p:
+                p.map(worker, tqdm(range(len(sampler))))

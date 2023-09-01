@@ -29,7 +29,7 @@ to get `[filename].csv` and `[filename].npz`
 
 ---
 ## Step-2: Install gcloud and Earth Engine Authentication
-You can follow this like to install gcloud and complete earth engine authentication: https://developers.google.com/earth-engine/guides/python_install#authentication
+You can follow this link to install gcloud and complete earth engine authentication: https://developers.google.com/earth-engine/guides/python_install#authentication
 
 
 ---
