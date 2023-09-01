@@ -47,10 +47,10 @@ class NAIPSampler(GeoSampler):
 
 
 def get_collection():
-    collection = ee.ImageCollection('USDA/NAIP/DOQQ')
+    collection = ee.ImageCollection('USDA/NAIP/DOQQ').select(['R','G'])
     return collection
 
-
+# No Filter Needed as we are using the region function
 def filter_collection(collection, coords, period=None, halfwidth=0.005):
     print("filtering collection")
     # Calculate the bounding box coordinates
@@ -80,76 +80,7 @@ def filter_collection(collection, coords, period=None, halfwidth=0.005):
     return filtered,size_of
 
 
-# def filter_collection(collection, coords, period=None, halfwidth=0.005):
-#     filtered = collection
-#     if period is not None:
-#         filtered = filtered.filterDate(*period)  # filter time
-#     filtered = filtered.filterBounds(ee.Geometry.Point(
-#         [coords[0]-halfwidth, coords[1]-halfwidth]))  # filter region
-#     filtered = filtered.filterBounds(ee.Geometry.Point(
-#         [coords[0]-halfwidth, coords[1]+halfwidth]))  # filter region
-#     filtered = filtered.filterBounds(ee.Geometry.Point(
-#         [coords[0]+halfwidth, coords[1]-halfwidth]))  # filter region
-#     filtered = filtered.filterBounds(ee.Geometry.Point(
-#         [coords[0]+halfwidth, coords[1]+halfwidth]))  # filter region
-#     if filtered.size().getInfo() == 0:
-#         print("filtered size is 0")
-#         raise ee.EEException(
-#             f'ImageCollection.filter: No suitable images found in ({coords[1]:.4f}, {coords[0]:.4f}) between {period[0]} and {period[1]}.')
-#     return filtered
-
-# def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=None):
-#     if isfile(join(save_path, fname.split('/')[-1])):
-#         return None
-    
-#     if bands is None:
-#         bands = RGB_BANDS
-    
-#     # Sort the collection by time in descending order
-#     collection = collection.sort('system:time_start', False)
-    
-#     # Define the bounding box region
-#     min_lon = coords[0] - halfwidth
-#     max_lon = coords[0] + halfwidth
-#     min_lat = coords[1] - halfwidth
-#     max_lat = coords[1] + halfwidth
-#     region = ee.Geometry.Rectangle([[min_lon, min_lat], [max_lon, max_lat]])
-    
-#     # Get the image list from the collection
-#     image_list = collection.toList(collection.size())
-    
-#     try:
-#         # Iterate through the images
-#         for ind in range(image_list.size().getInfo()):
-#             image = ee.Image(image_list.get(ind))
-#             image_info = image.getInfo()
-            
-#             timestamp = image_info['properties']['system:index']
-#             patch = image.select(*bands)
-            
-#             # Generate URL for thumbnail
-#             url = patch.getThumbURL({
-#                 'bands': bands,
-#                 'scale': scale or 1,
-#                 'format': 'jpg',
-#                 'crs': 'EPSG:4326',
-#                 'region': region,
-#                 'min': 0,
-#                 'max': 255
-#             })
-            
-#             # Download and save the image
-#             urllib.request.urlretrieve(url, join(save_path, fname.split('/')[-1]))
-            
-#             # Break after processing the first image
-#             break
-#     except Exception as e:
-#         print(f"Error: {e}")
-    
-#     return None
-
-
-def get_patch(collection, coords, size_of, bands=None, scale=None, save_path=None, fname=None):
+def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=None):
     print("entered get_patch")
     if isfile(join(save_path, fname.split('/')[-1])):
         print("file exists")
@@ -157,16 +88,11 @@ def get_patch(collection, coords, size_of, bands=None, scale=None, save_path=Non
     if bands is None:
         bands = RGB_BANDS
     collection = collection.sort('system:time_start', False)
-    # print("sorted collection")
-    # print("the image should appear")
-    # thanks to shitty ee api
-    # size_of = collection.size().getInfo()
-    # print("size of collection",size_of)
-    collection = collection.toList(collection.size())
+    print("sorted collection")
+    # collection = collection.toList(collection.size())
     # print('reached to list')
+
     halfwidth = 0.0012
-    # region = ee.Geometry.Rectangle(
-    #     [[coords[1]-halfwidth,coords[0]-halfwidth], [coords[1]+halfwidth,coords[0]+halfwidth]])
     # Define the bounding box region
     min_lon = coords[0] - halfwidth
     max_lon = coords[0] + halfwidth
@@ -175,32 +101,42 @@ def get_patch(collection, coords, size_of, bands=None, scale=None, save_path=Non
     region = ee.Geometry.Rectangle([[min_lon, min_lat], [max_lon, max_lat]])
     #  print region coordinates
     print("region",(min_lon, min_lat, max_lon, max_lat))
-    print("reached region")
+   
+    imgs_region = ee.Image(collection.getRegion(region,scale=20))
+    print("got region")
 
-    # print region
-    for ind in range(size_of):
-        print("entered for loop")
-        try: 
-            patch = ee.Image(collection.get(ind)).select(*bands)
-            print("patch made")
-            print("bands",bands)
-            exit()
-            url1 = patch.getDownloadURL({'bands': bands,'scale': 1, 'format': 'GEO_TIFF', 'crs':'EPSG:4326', 'region': region, 'min': 0, 'max': 255, 'gamma': 1.0})
-            # urllib.request.urlretrieve(url, join(save_path, fname.split('/')[-1].split('.')[0]+'.tiff'))
-            print("url1",url1)
-            url = patch.getThumbURL({'bands': bands, 'scale': 150, 'format': 'jpg',
-                                'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
-            # print url
-            print("URL",url)
+    # number of images in the region
+    num_imgs = len(imgs_region.getInfo()) -1
+    print("num_imgs",num_imgs)
+
+    # complete path name and get first image since it is the most recent
+    img = ee.Image('USDA/NAIP/DOQQ/'+imgs_region.getInfo()[num_imgs][0])
+    img_id = imgs_region.getInfo()[num_imgs][0]
+    print("img_id",img_id)
+
+    try:
+        # get url for img
+        try:
+            url = img.getThumbURL({'bands': ['R','G','B'], 'scale': 1, 'format': 'jpg',
+                                        'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
+            print(url)
+        except: # if RGB bands are not available, try NRG bands -- REMOVE THIS TRY EXCEPT BLOCK IF YOU WANT TO DOWNLOAD RGB BANDS ONLY and vice versa, keep the exception case for errors
             try:
-                urllib.request.urlretrieve(url, join(save_path, fname.split('/')[-1]))
+                url = img.getThumbURL({'bands': ['N','G','R'], 'scale': 1, 'format': 'jpg',
+                                            'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
+                print(url)
             except Exception as e:
-                continue
-            print("Image downloaded")
-            break
-        except Exception as e:
-            print("error processing image at index",ind)
-            continue
+                print("No RGB or NRG bands available: ",e)
+                print("Skipping Image")
+                return None
+
+        # download img
+        fname = imgs_region.getInfo()[num_imgs][0]+'.jpg'
+        urllib.request.urlretrieve(url, join(save_path, fname))
+        print("downloaded at ",join(save_path, fname))
+    except Exception as e:
+        print("Image unavailable", e)
+
     return None
 
 
@@ -218,10 +154,11 @@ def get_patches(collection, coords, startdate, enddate, debug=False, halfwidth=0
     print("starting to get patches")
     period = (startdate, enddate)
     try:
-        filtered_collection,size_of = filter_collection(
-            collection, coords, period, halfwidth=halfwidth)
-        print("filtered collection")
-        patches = get_patch(filtered_collection, coords,size_of, **kwargs)
+        # filtered_collection,size_of = filter_collection(
+        #     collection, coords, period, halfwidth=halfwidth)
+        # print("filtered collection")
+        # no need to filter as we are using the region function
+        patches = get_patch(collection, coords, **kwargs)
     except Exception as e:
         if debug:
             print(e)
@@ -294,15 +231,19 @@ if __name__ == '__main__':
             mkdir(join(save_path, file.split('.')[0]))
         rows = []
         with open(join(idir, file),encoding='cp1252') as ifd:
-            reader = csv.reader(ifd, delimiter=',')
-            for i, row in enumerate(reader):
-                if row!=[]:
-                    # print(i)
-                    # print(file)
-                    halfwidth=float(row[0])**(.5)
-                    if float(row[0]) > cutoff:
-                        rows.append([None, None, None, float(row[2]), float(row[1]), '_'.join(
-                            [str(i).zfill(5)]+[str(np.round(float(tmp), 6)) for tmp in row[1:3]]+[str(int(np.round(float(tmp), 6))) for tmp in row[3:]])+'.jpg'])
+            try:
+                reader = csv.reader(ifd, delimiter=',')
+                for i, row in enumerate(reader):
+                    if row!=[]:
+                        # print(i)
+                        # print(file)
+                        halfwidth=float(row[0])**(.5)
+                        if float(row[0]) > cutoff:
+                            rows.append([None, None, None, float(row[2]), float(row[1]), '_'.join(
+                                [str(i).zfill(5)]+[str(np.round(float(tmp), 6)) for tmp in row[1:3]]+[str(int(np.round(float(tmp), 6))) for tmp in row[3:]])+'.jpg'])
+            except Exception as e:
+                print("Funky Characters, No Problem!, going to next picture: ",e)
+                continue
         sampler = Sampler(rows)
 
         def worker(idx):
@@ -313,7 +254,7 @@ if __name__ == '__main__':
         print(file, len(sampler))
         indices = range(len(sampler))
         \
-        for i in tqdm(range(2)):
+        for i in tqdm(range(5)):
             # print(i)
             worker(i)
         exit()

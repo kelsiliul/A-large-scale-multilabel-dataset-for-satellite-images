@@ -4,3 +4,4 @@ images/
 osms/
 *.csv
 *.npz
+*.jpg
