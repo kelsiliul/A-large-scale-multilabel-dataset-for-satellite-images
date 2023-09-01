@@ -110,8 +110,8 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
     print("num_imgs",num_imgs)
 
     # complete path name and get first image since it is the most recent
-    img = ee.Image('USDA/NAIP/DOQQ/'+imgs_region.getInfo()[num_imgs][0])
-    img_id = imgs_region.getInfo()[num_imgs][0]
+    img = ee.Image('USDA/NAIP/DOQQ/'+imgs_region.getInfo()[1][0])
+    img_id = imgs_region.getInfo()[1][0]
     print("img_id",img_id)
 
     try:
@@ -131,7 +131,7 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
                 return None
 
         # download img
-        fname = imgs_region.getInfo()[num_imgs][0]+'.jpg'
+        # fname = imgs_region.getInfo()[num_imgs][0]+'.jpg'
         urllib.request.urlretrieve(url, join(save_path, fname))
         print("downloaded at ",join(save_path, fname))
     except Exception as e:
