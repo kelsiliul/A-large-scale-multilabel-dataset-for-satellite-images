@@ -150,8 +150,6 @@ def get_corresponding_sentinel(img_id, region, save_path, fname):
     #  modify save_path to save sentinel image
     # get second folder name
     save_path = save_path+'_sentinel'
-    fname = fname.split('.')[0]
-    fname = fname+'_sentinel.jpg'
     if not isdir(save_path):
         mkdir(save_path)
     collection = ee.ImageCollection('COPERNICUS/S2').filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 2))
