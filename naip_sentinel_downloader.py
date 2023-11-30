@@ -152,6 +152,10 @@ def get_corresponding_sentinel(img_id, region, save_path, fname):
     save_path = save_path+'_sentinel'
     if not isdir(save_path):
         mkdir(save_path)
+    # check if sentinel image already exists
+    if isfile(join(save_path, fname)):
+        print("sentinel file exists")
+        return None
     collection = ee.ImageCollection('COPERNICUS/S2').filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 2))
     collection = collection.map(cloudmask457)
 
@@ -188,10 +192,6 @@ def get_patches(collection, coords, startdate, enddate, debug=False, halfwidth=0
     print("starting to get patches")
     period = (startdate, enddate)
     try:
-        # filtered_collection,size_of = filter_collection(
-        #     collection, coords, period, halfwidth=halfwidth)
-        # print("filtered collection")
-        # no need to filter as we are using the region function
         patches = get_patch(collection, coords, **kwargs)
     except Exception as e:
         if debug:
@@ -299,3 +299,4 @@ if __name__ == '__main__':
             with Pool(args.num_workers) as p:
                 # p.map(worker, tqdm(range(400)))
                 p.map(worker, tqdm(range(len(sampler))))
+            print("completed")
