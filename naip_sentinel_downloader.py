@@ -297,6 +297,5 @@ if __name__ == '__main__':
             print("completed")
         else:
             with Pool(args.num_workers) as p:
-                # p.map(worker, tqdm(range(400)))
                 p.map(worker, tqdm(range(len(sampler))))
             print("completed")

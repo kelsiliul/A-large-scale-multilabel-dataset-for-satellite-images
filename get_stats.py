@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 
 
-files = os.listdir('images/delaware-latest/')
+files = os.listdir('images/vermont-latest/')
 classes = []
 labels = {}
 count_classes = {}
