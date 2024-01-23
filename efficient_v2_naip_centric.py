@@ -277,25 +277,21 @@ print("average number of neigbors for the first polygon:", numnbrs)
 
 # Choose sampling centroid that satisfy: Multilabel, Good polygon Coverage for NAIP image
 multicoords2_original = []
-multicoords2_naip_originals = []
 multicoords2_sentinel = []
 counter_original = 0
-counter_naip_originals = 0
 counter_sentinel = 0
 savedpolygons_original = []
 savedpolygons_sentinel = []
-savedpolygons_naip_originals = []
 savedpolygons2_original = {}
 savedpolygons2_sentinel = {}
-savedpolygons2_naip_originals = []
 
 starttime = time.time()
 
 for i in range(len(flattened)):
+
     halfwidth=0.0012
     other_points_original = []
     other_points_sentinel = []
-    other_points_naip_original = []
 
     cent=flattened[i].tolist()
     # print(cent)
@@ -306,45 +302,12 @@ for i in range(len(flattened)):
 
     # original rectangle
     rectangle=Polygon([[centroid[0]-halfwidth, centroid[1]-halfwidth],[centroid[0]+halfwidth, centroid[1]-halfwidth],[centroid[0]+halfwidth, centroid[1]+halfwidth],[centroid[0]-halfwidth, centroid[1]+halfwidth]])         
-    old_width=(rectangle.bounds[2]-rectangle.bounds[0])
-    old_height=(rectangle.bounds[3]-rectangle.bounds[1])
+    
     # sentinel rectangle is 10x the size of original rectangle
     new_width=(rectangle.bounds[2]-rectangle.bounds[0])*10
     new_height=(rectangle.bounds[3]-rectangle.bounds[1])*10
     sentinel_rectangle = Polygon([[centroid[0]-new_width/2, centroid[1]-new_height/2],[centroid[0]+new_width/2, centroid[1]-new_height/2],[centroid[0]+new_width/2, centroid[1]+new_height/2],[centroid[0]-new_width/2, centroid[1]+new_height/2]])
     
-    # create multiple rectangles as a grid within the sentinel rectangle of the same size as the original rectangle
-    naip_rectangles = []
-    num_rectangles = new_height // old_height
-    for k in range(int(num_rectangles)):
-        for j in range(int(num_rectangles)):
-            naip_rectangle = Polygon([[sentinel_rectangle.bounds[0]+j*old_width, sentinel_rectangle.bounds[1]+k*old_height], [sentinel_rectangle.bounds[0]+(j+1)*old_width, sentinel_rectangle.bounds[1]+k*old_height], [sentinel_rectangle.bounds[0]+(j+1)*old_width, sentinel_rectangle.bounds[1]+(k+1)*old_height], [sentinel_rectangle.bounds[0]+j*old_width, sentinel_rectangle.bounds[1]+(k+1)*old_height]])
-            naip_rectangles.append(naip_rectangle)
-    # visualize the sentinel rectangle and the naip rectangles and the original rectangle
-    # import matplotlib.pyplot as plt
-    # plt.figure()
-    # plt.plot(centroid[0], centroid[1], 'ro')
-    # plt.plot(rectangle.exterior.xy[0], rectangle.exterior.xy[1], 'b', label='original rectangle')
-    # plt.plot(sentinel_rectangle.exterior.xy[0], sentinel_rectangle.exterior.xy[1], 'g', label='sentinel rectangle')
-    # # for rect in naip_rectangles:
-    # #     plt.plot(rect.exterior.xy[0], rect.exterior.xy[1], 'r', alpha=0.1)
-    
-    # # plt.legend()
-    # plt.title('Sentinel Rectangle and NAIP Rectangle orginal')
-    # plt.savefig('sentinel_naip_rectangle.png')
-    # plt.show()
-    # plt.figure()
-    # plt.plot(centroid[0], centroid[1], 'ro')
-    # plt.plot(rectangle.exterior.xy[0], rectangle.exterior.xy[1], 'b', label='original rectangle')
-    # plt.plot(sentinel_rectangle.exterior.xy[0], sentinel_rectangle.exterior.xy[1], 'g', label='sentinel rectangle')
-    # for rect in naip_rectangles:
-    #     plt.plot(rect.exterior.xy[0], rect.exterior.xy[1], 'r', alpha=0.1)
-    
-    # # plt.legend()
-    # plt.title('Sentinel Rectangle and NAIP Rectangles')
-    # plt.savefig('sentinel_naip_rectangles.png')
-    # plt.show()
-   
     if center_pol.is_simple== False:
         print("not simple")
         continue
@@ -358,20 +321,10 @@ for i in range(len(flattened)):
     this_pol_sentinel = [p for p in center_pol_sentinel.geoms] if center_pol_sentinel.geom_type == 'MultiPolygon' else [center_pol_sentinel]
     row_sentinel = {int(thisclass): this_pol_sentinel}
 
-    # Process the naip rectangles
-    naip_rows = []
-    this_pol_naips = []
-    for k,naip_rectangle in enumerate(naip_rectangles):
-        center_pol_nai_original = intersection(center_pol, naip_rectangle)
-        this_pol_naip = [p for p in center_pol_nai_original.geoms] if center_pol_nai_original.geom_type == 'MultiPolygon' else [center_pol_nai_original]
-        this_pol_naips.append(this_pol_naip)
-        row_naip_original = {int(thisclass): this_pol_naip}
-        naip_rows.append(row_naip_original)
-    
 
     inds = neighbors.radius_neighbors(flattened[i:i+1, :2], return_distance=False)[0]
     inds = np.concatenate((inds, l_inds))
-    first = True
+
     for j in inds:
         if j==i:
             continue
@@ -400,27 +353,6 @@ for i in range(len(flattened)):
             this_pol_sentinel = union(pol2_sentinel, this_pol_sentinel)
             other_points_sentinel.extend([int(c)])
 
-        # naip rectangles
-        k = 0
-        for naip_row, naip_rectangle in zip(naip_rows, naip_rectangles):
-            other_points_individual = []
-            # Process the naip rectangle
-            if intersects(naip_rectangle, pol):
-                if pol.is_simple == False:
-                    print("not simple")
-                    continue
-                pol2_naip = intersection(pol, naip_rectangle)
-                th_pol_naip = [q for q in pol2_naip.geoms] if pol2_naip.geom_type == 'MultiPolygon' else [pol2_naip]
-                naip_rows[k][int(c)] = th_pol_naip
-                this_pol_naips[k] = union(pol2_naip, this_pol_naips[k])
-                other_points_individual.extend([int(c)])
-            if first:
-                other_points_naip_original.append(other_points_individual)
-            else:
-                other_points_naip_original[k].extend(other_points_individual)
-            k += 1
-        first = False
-       
     if other_points_original != []:
         cent.extend(other_points_original)
         dictionary = dict.fromkeys(cent)
@@ -432,7 +364,6 @@ for i in range(len(flattened)):
         area_original = s_original.area
         ratio_original = area_original / rectangle.area
         if ratio_original > 0.7:
-            print("counter_original:", counter_original)
             savedpolygons_original.append(s_original)
             savedpolygons2_original[counter_original] = row_original
             multicoords2_original.append(deduplicated_list)
@@ -449,34 +380,11 @@ for i in range(len(flattened)):
             s_sentinel = union(s_sentinel, p)
         area_sentinel = s_sentinel.area
         ratio_sentinel = area_sentinel / sentinel_rectangle.area
-        if ratio_sentinel > 0.7:
+        if ratio_original > 0.7:
             savedpolygons_sentinel.append(s_sentinel)
-            print("counter_sentinel:", counter_sentinel)
             savedpolygons2_sentinel[counter_sentinel] = row_sentinel
             multicoords2_sentinel.append(deduplicated_list)
             counter_sentinel += 1
-    
-    # # Process the naip rectangles
-    # for k in range(len(other_points_naip_original)):
-    #     if other_points_naip_original[k] != []:
-    #         cent.extend(other_points_naip_original[k])
-    #         dictionary = dict.fromkeys(cent)
-    #         deduplicated_list = list(dictionary)
-    #         this_pol_naips[k] = intersection(this_pol_naips[k], naip_rectangles[k])
-    #         s_naip = this_pol_naips[k][0]
-    #         for p in this_pol_naips[k].tolist():
-    #             s_naip = union(s_naip, p)
-    #         area_naip = s_naip.area
-    #         ratio_naip = area_naip / naip_rectangles[k].area
-    #         if ratio_naip > 0.7:
-    #             savedpolygons_naip_originals.append(s_naip)
-    #             print("length of savedpolygons_naip_originals:", len(savedpolygons_naip_originals))
-    #             print("savedpolygons_naip_originals:", savedpolygons_naip_originals)
-    #             print("counter_naip_originals:", counter_naip_originals)
-    #             savedpolygons2_naip_originals[counter_naip_originals] = naip_rows[k]
-    #             multicoords2_naip_originals.append(deduplicated_list)
-    #             counter_naip_originals += 1
-            
 
 
     if i%500==0:
@@ -490,35 +398,21 @@ print("Length of multicoords2_original:", len(multicoords2_original))
 print("Length of savedpolygons_sentinel:", len(savedpolygons_sentinel))
 print("Length of multicoords2_sentinel:", len(multicoords2_sentinel))
 
-print("Length of savedpolygons_naip_originals:", len(savedpolygons_naip_originals))
-print("Length of multicoords2_naip_originals:", len(multicoords2_naip_originals))
-
 # Save Segmentation for the original rectangle
 keys_original = list(savedpolygons2_original.keys())
 values_original = list(savedpolygons2_original.values())
-npz_file_path_original = "{}.npz".format(args.input_file.split('/')[-1].split('.')[0])
+npz_file_path_original = "{}np.npz".format(args.input_file.split('/')[-1].split('.')[0])
 np.savez(npz_file_path_original, keys=keys_original, values=values_original)
 
 # Save Segmentation for the sentinel rectangle
 keys_sentinel = list(savedpolygons2_sentinel.keys())
 values_sentinel = list(savedpolygons2_sentinel.values())
-npz_file_path_sentinel = "{}_sentinel.npz".format(args.input_file.split('/')[-1].split('.')[0])
+npz_file_path_sentinel = "{}_sentinelnp.npz".format(args.input_file.split('/')[-1].split('.')[0])
 np.savez(npz_file_path_sentinel, keys=keys_sentinel, values=values_sentinel)
-
-# Save Segmentation for the naip rectangles
-for i in range(len(multicoords2_naip_originals)):
-    keys_naip_originals = list(savedpolygons2_naip_originals[i].keys())
-    values_naip_originals = list(savedpolygons2_naip_originals[i].values())
-    npz_file_path_naip_originals = "{}_naip_original_{}.npz".format(args.input_file.split('/')[-1].split('.')[0], i)
-    np.savez(npz_file_path_naip_originals, keys=keys_naip_originals, values=values_naip_originals)
-# keys_naip_originals = list(savedpolygons2_naip_originals.keys())
-# values_naip_originals = list(savedpolygons2_naip_originals.values())
-# npz_file_path_naip_originals = "{}_naip_originals.npz".format(args.input_file.split('/')[-1].split('.')[0])
-# np.savez(npz_file_path_naip_originals, keys=keys_naip_originals, values=values_naip_originals)
 
 
 # Save Sampling Centroid for the original rectangle
-with open('{}_original.csv'.format(args.input_file.split('/')[-1].split('.')[0]), 'w') as ofd_original:
+with open('{}_originalnp.csv'.format(args.input_file.split('/')[-1].split('.')[0]), 'w') as ofd_original:
     writer_original = csv.writer(ofd_original)
     for ind in range(len(multicoords2_original)):
         if len(multicoords2_original[ind]) >= 4:
@@ -526,25 +420,12 @@ with open('{}_original.csv'.format(args.input_file.split('/')[-1].split('.')[0])
             writer_original.writerow(row)
 
 # Save Sampling Centroid for the sentinel rectangle
-with open('{}_sentinel.csv'.format(args.input_file.split('/')[-1].split('.')[0]), 'w') as ofd_sentinel:
+with open('{}_sentinelnp.csv'.format(args.input_file.split('/')[-1].split('.')[0]), 'w') as ofd_sentinel:
     writer_sentinel = csv.writer(ofd_sentinel)
     for ind in range(len(multicoords2_sentinel)):
         if len(multicoords2_sentinel[ind]) >= 4:
             row = [savedpolygons_sentinel[ind].area * (111000 * 111000)] + multicoords2_sentinel[ind]
             writer_sentinel.writerow(row)
-
-
-# Save Sampling Centroid for the naip rectangles
-for i in range(len(multicoords2_naip_originals)):
-    with open('{}_naip_original_{}.csv'.format(args.input_file.split('/')[-1].split('.')[0], i), 'w') as ofd_naip_original:
-        # include which sentinel rectangle the naip rectangle is in
-        writer_naip_original = csv.writer(ofd_naip_original)
-        for ind in range(len(multicoords2_naip_originals[i])):
-            if len(multicoords2_naip_originals[i][ind]) >= 4:
-                row = [savedpolygons_naip_originals[i][ind].area * (111000 * 111000)] + multicoords2_naip_originals[i][ind]
-                writer_naip_original.writerow(row)
-        
-
 
 # get labels for same multi-coords but with larger rectangles, so cents are the exact same, there will be more labels and overlap
 

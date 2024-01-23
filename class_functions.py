@@ -377,3 +377,45 @@ output_files = [
     'classes/wetland.csv'
 ]
     
+
+# classes numbered
+#  0 tennis
+#  1 skate
+#  2 amfootball
+#  3 swimming
+#  4 cemetery
+#  5 garage
+#  6 golf
+#  7 roundabout
+#  8 parkinglot
+#  9 supermarket
+# 10 school
+# 11 marina
+# 12 baseball
+# 13 fall
+# 14 pond
+# 15 airport
+# 16 beach
+# 17 bridge
+# 18 religious
+# 19 residential
+# 20 warehouse
+# 21 office
+# 22 farmland
+# 23 university
+# 24 forest
+# 25 lake
+# 26 naturereserve
+# 27 park
+# 28 sand
+# 29 soccer
+# 30 equestrian
+# 31 shooting
+# 32 icerink
+# 33 commercialarea
+# 34 garden
+# 35 dam
+# 36 railroad
+# 37 highway
+# 38 river
+# 39 wetland
