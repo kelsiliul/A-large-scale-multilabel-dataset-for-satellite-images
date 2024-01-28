@@ -86,14 +86,14 @@ def filter_collection(collection, coords, period=None, halfwidth=0.005):
 
 
 def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=None):
-    print("entered get_patch")
+    # print("entered get_patch")
     if isfile(join(save_path, fname.split('/')[-1])):
         print("file exists")
         return None
     if bands is None:
         bands = RGB_BANDS
     collection = collection.sort('system:time_start', False)
-    print("sorted collection")
+    # print("sorted collection")
     # collection = collection.toList(collection.size())
     # print('reached to list')
 
@@ -104,46 +104,80 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
     min_lat = coords[1] - halfwidth
     max_lat = coords[1] + halfwidth
     region = ee.Geometry.Rectangle([[min_lon, min_lat], [max_lon, max_lat]])
-    #  print region coordinates
-    print("region",(min_lon, min_lat, max_lon, max_lat))
-   
+    # get sentinel region
+    
+    center = region.centroid().getInfo()['coordinates']
+    width = region.bounds().getInfo()['coordinates'][0][2][0] - region.bounds().getInfo()['coordinates'][0][0][0]
+    height = region.bounds().getInfo()['coordinates'][0][2][1] - region.bounds().getInfo()['coordinates'][0][0][1]
+    new_width = width * 10
+    new_height = height * 10
+
     imgs_region = ee.Image(collection.getRegion(region,scale=20))
-    print("got region")
+    
 
     # number of images in the region
     num_imgs = len(imgs_region.getInfo()) -1
-    print("num_imgs",num_imgs)
+
 
     # complete path name and get first image since it is the most recent
     img = ee.Image('USDA/NAIP/DOQQ/'+imgs_region.getInfo()[1][0])
     img_id = imgs_region.getInfo()[1][0]
-    print("img_id",img_id)
-
-    try:
-        # get url for img
-        try:
-            url = img.getThumbURL({'bands': ['R','G','B'], 'scale': 1, 'format': 'jpg',
-                                        'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
-            print(url)
-        except: # if RGB bands are not available, try NRG bands -- REMOVE THIS TRY EXCEPT BLOCK IF YOU WANT TO DOWNLOAD RGB BANDS ONLY and vice versa, keep the exception case for errors
-            try:
-                url = img.getThumbURL({'bands': ['N','G','R'], 'scale': 1, 'format': 'jpg',
-                                            'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
-                print(url)
-            except Exception as e:
-                print("No RGB or NRG bands available: ",e)
-                print("Skipping Image")
-                return None
-
-        # download img
-        # fname = imgs_region.getInfo()[num_imgs][0]+'.jpg'
-        urllib.request.urlretrieve(url, join(save_path, fname))
-        print("downloaded at ",join(save_path, fname))
-    except Exception as e:
-        print("Image unavailable", e)
-
     get_corresponding_sentinel(img_id, region, save_path, fname)
+ 
+    new_save_path = join(save_path,fname[:-4])
+    if not isdir(new_save_path):
+        mkdir(new_save_path)
+    # print("new_save_path",new_save_path)
 
+    # new_region = ee.Geometry.Rectangle([center[0] - new_width/2, center[1] - new_height/2, center[0] + new_width/2, center[1] + new_height/2])
+    print("creating rectangles")
+    naip_rectangles= []
+    num_rectangles = int(new_height//height)
+    # print("num_rectangles",num_rectangles)
+    for i in range(num_rectangles):
+        for j in range(num_rectangles):
+            naip_rectangles.append(ee.Geometry.Rectangle([center[0] - new_width/2 + i*width, center[1] - new_height/2 + j*height, center[0] - new_width/2 + (i+1)*width, center[1] - new_height/2 + (j+1)*height]))
+    print("got rectangles")
+    
+
+    # get naip images for each rectangle
+    for i in range(len(naip_rectangles)):
+        imgs_region = ee.Image(collection.getRegion(naip_rectangles[i],scale=20))
+        
+
+        # number of images in the region
+        num_imgs = len(imgs_region.getInfo()) -1
+        print("num_imgs",num_imgs)
+
+        # complete path name and get first image since it is the most recent
+        img = ee.Image('USDA/NAIP/DOQQ/'+imgs_region.getInfo()[1][0])
+        img_id = imgs_region.getInfo()[1][0]
+        print("img_id",img_id)
+
+        try:
+            # get url for img
+            try:
+                url = img.getThumbURL({'bands': ['R','G','B'], 'scale': 1, 'format': 'jpg',
+                                            'crs': 'EPSG:4326', 'region': naip_rectangles[i], 'min': 0, 'max': 255})
+                print(url)
+            except: # if RGB bands are not available, try NRG bands -- REMOVE THIS TRY EXCEPT BLOCK IF YOU WANT TO DOWNLOAD RGB BANDS ONLY and vice versa, keep the exception case for errors
+                try:
+                    url = img.getThumbURL({'bands': ['N','G','R'], 'scale': 1, 'format': 'jpg',
+                                                'crs': 'EPSG:4326', 'region': naip_rectangles[i], 'min': 0, 'max': 255})
+                    print(url)
+                except Exception as e:
+                    print("No RGB or NRG bands available: ",e)
+                    print("Skipping Image")
+                    return None
+
+            # download img
+            # new save path = old save path/fname/rectangle number
+            urllib.request.urlretrieve(url, join(new_save_path,str(i)+'.jpg')) # change i to img_id if you want to save the image with the image id as the name
+            print("downloaded at ",join(save_path, fname))
+        except Exception as e:
+            print("Image unavailable", e)
+
+   
     return None
 
 def get_corresponding_sentinel(img_id, region, save_path, fname):
@@ -189,7 +223,7 @@ def get_period(date, days=10):
 
 
 def get_patches(collection, coords, startdate, enddate, debug=False, halfwidth=0.005, **kwargs):
-    print("starting to get patches")
+    # print("starting to get patches")
     period = (startdate, enddate)
     try:
         patches = get_patch(collection, coords, **kwargs)
@@ -277,7 +311,7 @@ if __name__ == '__main__':
                 print("Funky Characters, No Problem!, going to next picture: ",e)
                 continue
 
-        # rows = rows[:10]
+        rows = rows[:10]
         # print("rows",rows)
         sampler = Sampler(rows)
         
