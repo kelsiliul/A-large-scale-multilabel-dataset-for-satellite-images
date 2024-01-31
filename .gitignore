@@ -5,3 +5,5 @@ osms/
 *.csv
 *.npz
 *.jpg
+*.png
+*.pdf
