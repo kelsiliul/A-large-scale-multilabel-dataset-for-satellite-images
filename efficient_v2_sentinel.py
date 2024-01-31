@@ -20,6 +20,8 @@ from shapely.validation import make_valid
 from collections import defaultdict
 import argparse
 
+import tqdm
+from tqdm import tqdm
 np.random.seed(42)
 starttime = time.time()
 
@@ -291,7 +293,7 @@ savedpolygons2_naip_originals = {}
 
 starttime = time.time()
 
-for i in range(len(flattened)):
+for i in tqdm(range(len(flattened))):
     halfwidth=0.0012
     other_points_original = []
     other_points_sentinel = []
@@ -404,7 +406,7 @@ for i in range(len(flattened)):
         # original
         if intersects(rectangle, pol):
             if pol.is_simple== False:
-                print("not simple")
+                # print("not simple")
                 continue
             pol2=intersection(pol, rectangle)
             th_pol = [q for q in pol2.geoms] if pol2.geom_type == 'MultiPolygon' else [pol2]
@@ -415,7 +417,7 @@ for i in range(len(flattened)):
         # sentinel
         if intersects(sentinel_rectangle, pol):
             if pol.is_simple == False:
-                print("not simple")
+                # print("not simple")
                 continue
             pol2_sentinel = intersection(pol, sentinel_rectangle)
             th_pol_sentinel = [q for q in pol2_sentinel.geoms] if pol2_sentinel.geom_type == 'MultiPolygon' else [pol2_sentinel]
@@ -432,7 +434,7 @@ for i in range(len(flattened)):
             if intersects(naip_rectangle, pol):
                 intersecting_indices.append(k)
                 if pol.is_simple == False:
-                    print("not simple")
+                    # print("not simple")
                     continue
                 pol2_naip = intersection(pol, naip_rectangle)
                 th_pol_naip = [q for q in pol2_naip.geoms] if pol2_naip.geom_type == 'MultiPolygon' else [pol2_naip]
@@ -446,9 +448,9 @@ for i in range(len(flattened)):
             k += 1
         first = False
         # print("intersecting_indices:", intersecting_indices)
-    print("other points 83", other_points_naip_original[83])
-    print("other points 45", other_points_naip_original[45])
-    print("other points 0", other_points_naip_original[0])
+    # print("other points 83", other_points_naip_original[83])
+    # print("other points 45", other_points_naip_original[45])
+    # print("other points 0", other_points_naip_original[0])
     if other_points_original != []:
         cent_original.extend(other_points_original)
         dictionary = dict.fromkeys(cent_original)
