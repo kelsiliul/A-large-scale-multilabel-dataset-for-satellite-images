@@ -311,7 +311,7 @@ if __name__ == '__main__':
                 print("Funky Characters, No Problem!, going to next picture: ",e)
                 continue
 
-        rows = rows[:10]
+        # rows = rows[:30]
         # print("rows",rows)
         sampler = Sampler(rows)
         

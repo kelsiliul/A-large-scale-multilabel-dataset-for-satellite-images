@@ -327,30 +327,30 @@ for i in tqdm(range(len(flattened))):
         for j in range(int(num_rectangles)):
             naip_rectangle = Polygon([[sentinel_rectangle.bounds[0]+j*old_width, sentinel_rectangle.bounds[1]+k*old_height], [sentinel_rectangle.bounds[0]+(j+1)*old_width, sentinel_rectangle.bounds[1]+k*old_height], [sentinel_rectangle.bounds[0]+(j+1)*old_width, sentinel_rectangle.bounds[1]+(k+1)*old_height], [sentinel_rectangle.bounds[0]+j*old_width, sentinel_rectangle.bounds[1]+(k+1)*old_height]])
             naip_rectangles.append(naip_rectangle)
-    # # visualize the sentinel rectangle and the naip rectangles and the original rectangle
-    # import matplotlib.pyplot as plt
-    # plt.figure()
-    # # plt.plot(centroid[0], centroid[1], 'ro')
-    # plt.plot(rectangle.exterior.xy[0], rectangle.exterior.xy[1], 'b', label='original rectangle')
-    # plt.plot(sentinel_rectangle.exterior.xy[0], sentinel_rectangle.exterior.xy[1], 'g', label='sentinel rectangle')
+    # visualize the sentinel rectangle and the naip rectangles and the original rectangle
+    import matplotlib.pyplot as plt
+    plt.figure()
+    # plt.plot(centroid[0], centroid[1], 'ro')
+    plt.plot(rectangle.exterior.xy[0], rectangle.exterior.xy[1], 'b', label='original rectangle')
+    plt.plot(sentinel_rectangle.exterior.xy[0], sentinel_rectangle.exterior.xy[1], 'g', label='sentinel rectangle')
 
-    # # plot 45th naip rectangle
-    # plt.plot(naip_rectangles[45].exterior.xy[0], naip_rectangles[45].exterior.xy[1], 'r', label='45th naip rectangle')
-    # plt.title('Sentinel Rectangle and NAIP Rectangle orginal')
-    # plt.savefig('sentinel_naip_rectangle.png')
-    # plt.show()
-    # # ---
-    # plt.figure()
-    # # plt.plot(centroid[0], centroid[1], 'ro')
-    # plt.plot(rectangle.exterior.xy[0], rectangle.exterior.xy[1], 'b', label='original rectangle')
-    # plt.plot(sentinel_rectangle.exterior.xy[0], sentinel_rectangle.exterior.xy[1], 'g', label='sentinel rectangle')
-    # for rect in naip_rectangles:
-    #     plt.plot(rect.exterior.xy[0], rect.exterior.xy[1], 'r', alpha=0.1)
-    # # plot center_pol
-    # plt.plot(center_pol.exterior.xy[0], center_pol.exterior.xy[1], 'magenta', label='center_pol')
-    # plt.title('Sentinel Rectangle and NAIP Rectangles')
-    # plt.savefig('sentinel_naip_rectangles.png')
-    # plt.show()
+    # plot 45th naip rectangle
+    plt.plot(naip_rectangles[45].exterior.xy[0], naip_rectangles[45].exterior.xy[1], 'r', label='45th naip rectangle')
+    plt.title('Sentinel Rectangle and NAIP Rectangle orginal')
+    plt.savefig('sentinel_naip_rectangle.png')
+    plt.show()
+    # ---
+    plt.figure()
+    # plt.plot(centroid[0], centroid[1], 'ro')
+    plt.plot(rectangle.exterior.xy[0], rectangle.exterior.xy[1], 'b', label='original rectangle')
+    plt.plot(sentinel_rectangle.exterior.xy[0], sentinel_rectangle.exterior.xy[1], 'g', label='sentinel rectangle')
+    for rect in naip_rectangles:
+        plt.plot(rect.exterior.xy[0], rect.exterior.xy[1], 'r', alpha=0.1)
+    # plot center_pol
+    plt.plot(center_pol.exterior.xy[0], center_pol.exterior.xy[1], 'magenta', label='center_pol')
+    plt.title('Sentinel Rectangle and NAIP Rectangles')
+    plt.savefig('sentinel_naip_rectangles.png')
+    plt.show()
 
     if center_pol.is_simple== False:
         print("not simple")
@@ -388,21 +388,21 @@ for i in tqdm(range(len(flattened))):
             continue
         c = flattened[j][2]
         pol=polygons[j]
-        # # visualize the sentinel rectangle and the naip rectangles and the original rectangle and pol
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        # # plt.plot(centroid[0], centroid[1], 'ro')
-        # plt.plot(rectangle.exterior.xy[0], rectangle.exterior.xy[1], 'b', label='original rectangle')
-        # plt.plot(sentinel_rectangle.exterior.xy[0], sentinel_rectangle.exterior.xy[1], 'g', label='sentinel rectangle')
-        # for rect in naip_rectangles:
-        #     plt.plot(rect.exterior.xy[0], rect.exterior.xy[1], 'r', alpha=0.1)
-        # # color rect 83
+        # visualize the sentinel rectangle and the naip rectangles and the original rectangle and pol
+        import matplotlib.pyplot as plt
+        plt.figure()
+        # plt.plot(centroid[0], centroid[1], 'ro')
+        plt.plot(rectangle.exterior.xy[0], rectangle.exterior.xy[1], 'b', label='original rectangle')
+        plt.plot(sentinel_rectangle.exterior.xy[0], sentinel_rectangle.exterior.xy[1], 'g', label='sentinel rectangle')
+        for rect in naip_rectangles:
+            plt.plot(rect.exterior.xy[0], rect.exterior.xy[1], 'r', alpha=0.1)
+        # color rect 83
         # plt.plot(naip_rectangles[83].exterior.xy[0], naip_rectangles[83].exterior.xy[1], 'yellow', label='83th naip rectangle')
-        # # plot pol
-        # plt.plot(pol.exterior.xy[0], pol.exterior.xy[1], 'magenta', label='pol')
-        # plt.title('Sentinel Rectangle and NAIP Rectangles')
-        # plt.savefig('sentinel_naip_rectangles_pol.png')
-        # plt.show()
+        # plot pol
+        plt.plot(pol.exterior.xy[0], pol.exterior.xy[1], 'magenta', label='pol')
+        plt.title('Sentinel Rectangle and NAIP Rectangles')
+        plt.savefig('sentinel_naip_rectangles_pol.png')
+        plt.show()
         # original
         if intersects(rectangle, pol):
             if pol.is_simple== False:
