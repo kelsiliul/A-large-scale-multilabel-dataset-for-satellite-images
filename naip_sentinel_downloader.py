@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import warnings
 warnings.simplefilter('ignore', UserWarning)
 from tqdm import tqdm
-
+from PIL import Image
 
 class GeoSampler:
 
@@ -174,6 +174,15 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
             # new save path = old save path/fname/rectangle number
             urllib.request.urlretrieve(url, join(new_save_path,str(i)+'.jpg')) # change i to img_id if you want to save the image with the image id as the name
             print("downloaded at ",join(save_path, fname))
+            # check if image is downloaded properly i.e. not more than 1/4 of the image is black
+            img = np.array(Image.open(join(new_save_path,str(i)+'.jpg')))
+            if np.mean(img==0) > 0.25:
+                print("redownloading image")
+                urllib.request.urlretrieve(url, join(new_save_path,str(i)+'.jpg'))
+                img = np.array(Image.open(join(new_save_path,str(i)+'.jpg')))
+                if np.mean(img==0) > 0.25:
+                    print("Image is still black, skipping image")
+                    return None
         except Exception as e:
             print("Image unavailable", e)
 
@@ -208,6 +217,16 @@ def get_corresponding_sentinel(img_id, region, save_path, fname):
         print(url)
         # download img
         urllib.request.urlretrieve(url, join(save_path, fname))
+
+        # check if image is downloaded properly i.e. not more than 1/4 of the image is black
+        img = np.array(Image.open(join(save_path, fname)))
+        if np.mean(img==0) > 0.25:
+            print("redownloading image")
+            urllib.request.urlretrieve(url, join(save_path, fname))
+            img = np.array(Image.open(join(save_path, fname)))
+            if np.mean(img==0) > 0.25:
+                print("Image is still black, skipping image")
+                return None
     except Exception as e:
         print("Sentinel Image unavailable", e)
         return None
