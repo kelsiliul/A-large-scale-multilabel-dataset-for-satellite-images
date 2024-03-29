@@ -178,6 +178,15 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
                 continue
             urllib.request.urlretrieve(url, join(new_save_path,str(i)+'.jpg')) # change i to img_id if you want to save the image with the image id as the name
             print("downloaded at ",join(save_path, fname))
+            # check if image is downloaded properly i.e. not more than 1/4 of the image is black
+            img = np.array(Image.open(join(new_save_path,str(i)+'.jpg')))
+            if np.mean(img==0) > 0.25:
+                print("redownloading image")
+                urllib.request.urlretrieve(url, join(new_save_path,str(i)+'.jpg'))
+                img = np.array(Image.open(join(new_save_path,str(i)+'.jpg')))
+                if np.mean(img==0) > 0.25:
+                    print("Image is still black, skipping image")
+                    return None
         except Exception as e:
             print("Image unavailable", e)
 
@@ -220,12 +229,16 @@ def get_corresponding_sentinel(img_id, region, save_path, fname):
             print("sentinel file exists")
             return None
         urllib.request.urlretrieve(url, join(save_path, fname))
-        # if atleast 20% of the image is black, then re-download the image
-        img = np.array(Image.open(join(save_path, fname)))
-        if np.sum(img==0)/(img.shape[0]*img.shape[1]) > 0.2:
-            print("black image")
-            urllib.request.urlretrieve(url, join(save_path, fname))
 
+        # check if image is downloaded properly i.e. not more than 1/4 of the image is black
+        img = np.array(Image.open(join(save_path, fname)))
+        if np.mean(img==0) > 0.25:
+            print("redownloading image")
+            urllib.request.urlretrieve(url, join(save_path, fname))
+            img = np.array(Image.open(join(save_path, fname)))
+            if np.mean(img==0) > 0.25:
+                print("Image is still black, skipping image")
+                return None
     except Exception as e:
         print("Sentinel Image unavailable", e)
         return None
