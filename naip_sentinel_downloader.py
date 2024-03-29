@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import warnings
 warnings.simplefilter('ignore', UserWarning)
 from tqdm import tqdm
-
+from PIL import Image
 
 class GeoSampler:
 
@@ -147,24 +147,24 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
 
         # number of images in the region
         num_imgs = len(imgs_region.getInfo()) -1
-        print("num_imgs",num_imgs)
+        # print("num_imgs",num_imgs)
 
         # complete path name and get first image since it is the most recent
         img = ee.Image('USDA/NAIP/DOQQ/'+imgs_region.getInfo()[1][0])
         img_id = imgs_region.getInfo()[1][0]
-        print("img_id",img_id)
+        # print("img_id",img_id)
 
         try:
             # get url for img
             try:
                 url = img.getThumbURL({'bands': ['R','G','B'], 'scale': 1, 'format': 'jpg',
                                             'crs': 'EPSG:4326', 'region': naip_rectangles[i], 'min': 0, 'max': 255})
-                print(url)
+                # print(url)
             except: # if RGB bands are not available, try NRG bands -- REMOVE THIS TRY EXCEPT BLOCK IF YOU WANT TO DOWNLOAD RGB BANDS ONLY and vice versa, keep the exception case for errors
                 try:
                     url = img.getThumbURL({'bands': ['N','G','R'], 'scale': 1, 'format': 'jpg',
                                                 'crs': 'EPSG:4326', 'region': naip_rectangles[i], 'min': 0, 'max': 255})
-                    print(url)
+                    # print(url)
                 except Exception as e:
                     print("No RGB or NRG bands available: ",e)
                     print("Skipping Image")
@@ -172,6 +172,10 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
 
             # download img
             # new save path = old save path/fname/rectangle number
+            # check if the image already exists
+            if isfile(join(new_save_path,str(i)+'.jpg')):
+                print("file exists")
+                continue
             urllib.request.urlretrieve(url, join(new_save_path,str(i)+'.jpg')) # change i to img_id if you want to save the image with the image id as the name
             print("downloaded at ",join(save_path, fname))
         except Exception as e:
@@ -203,11 +207,25 @@ def get_corresponding_sentinel(img_id, region, save_path, fname):
     new_region = ee.Geometry.Rectangle([center[0] - new_width/2, center[1] - new_height/2, center[0] + new_width/2, center[1] + new_height/2])
     # get url for img
 
+    url = image.getThumbURL({'name': fname, 'format': 'jpg','crs': 'EPSG:4326', 'region': new_region, 'min': 0, 'max': 0.3, 'gamma': 1.0, 'scale': 10})
+        # print(url)
+    urllib.request.urlretrieve(url, join(save_path, fname))
+
     try:
         url = image.getThumbURL({'name': fname, 'format': 'jpg','crs': 'EPSG:4326', 'region': new_region, 'min': 0, 'max': 0.3, 'gamma': 1.0, 'scale': 10})
-        print(url)
+        # print(url)
         # download img
+        # check if the image already exists
+        if isfile(join(save_path, fname)):
+            print("sentinel file exists")
+            return None
         urllib.request.urlretrieve(url, join(save_path, fname))
+        # if atleast 20% of the image is black, then re-download the image
+        img = np.array(Image.open(join(save_path, fname)))
+        if np.sum(img==0)/(img.shape[0]*img.shape[1]) > 0.2:
+            print("black image")
+            urllib.request.urlretrieve(url, join(save_path, fname))
+
     except Exception as e:
         print("Sentinel Image unavailable", e)
         return None
