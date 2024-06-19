@@ -18,6 +18,7 @@ import warnings
 warnings.simplefilter('ignore', UserWarning)
 from tqdm import tqdm
 from PIL import Image
+from shapely.geometry import Polygon
 
 class GeoSampler:
 
@@ -47,7 +48,8 @@ class NAIPSampler(GeoSampler):
 
 
 def get_collection():
-    collection = ee.ImageCollection('USDA/NAIP/DOQQ').select(['R','G'])
+    # collection = ee.ImageCollection('USDA/NAIP/DOQQ').select(['R','G'])
+    collection = ee.ImageCollection("projects/planet-nicfi/assets/basemaps/asia").filterDate('2015-01-01', '2023-12-31')
     return collection
 
 def cloudmask457(image):
@@ -107,20 +109,28 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
         get_corresponding_sentinel(0, region, save_path, fname)
     except Exception as e:
         print("Sentinel Image unavailable", e)
-    
+
+
+   
     center = region.centroid().getInfo()['coordinates']
     width = region.bounds().getInfo()['coordinates'][0][2][0] - region.bounds().getInfo()['coordinates'][0][0][0]
     height = region.bounds().getInfo()['coordinates'][0][2][1] - region.bounds().getInfo()['coordinates'][0][0][1]
     new_width = width * 10
     new_height = height * 10
-
-    imgs_region = ee.Image(collection.getRegion(region,scale=20))
-
-    # complete path name and get first image since it is the most recent
-    # img = ee.Image('USDA/NAIP/DOQQ/'+imgs_region.getInfo()[1][0])
     
-    
+    # imgs_region = ee.Image(collection.getRegion(region,scale=20))
+
+    sentinel_rectangle = Polygon([(center[0] - new_width/2, center[1] - new_height/2), (center[0] + new_width/2, center[1] - new_height/2), (center[0] + new_width/2, center[1] + new_height/2), (center[0] - new_width/2, center[1] + new_height/2)])
+  
    
+    left = sentinel_rectangle.bounds[0]
+    mid = (sentinel_rectangle.bounds[0] + sentinel_rectangle.bounds[2])/2
+    right = sentinel_rectangle.bounds[2]
+    top = sentinel_rectangle.bounds[3]
+    midtop = (sentinel_rectangle.bounds[1] + sentinel_rectangle.bounds[3])/2
+    bottom = sentinel_rectangle.bounds[1]
+
+    
     new_save_path = join(save_path,fname[:-4])
     if not isdir(new_save_path):
         mkdir(new_save_path)
@@ -129,51 +139,34 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
     # new_region = ee.Geometry.Rectangle([center[0] - new_width/2, center[1] - new_height/2, center[0] + new_width/2, center[1] + new_height/2])
     # print("creating rectangles")
     naip_rectangles= []
-    num_rectangles = int(new_height//height)
+    num_rectangles = 4
     
-    for i in range(num_rectangles):
-        for j in range(num_rectangles):
-            naip_rectangles.append(ee.Geometry.Rectangle([center[0] - new_width/2 + i*width, center[1] - new_height/2 + j*height, center[0] - new_width/2 + (i+1)*width, center[1] - new_height/2 + (j+1)*height]))
-    # print("got rectangles")
+    bottom_left = ee.Geometry.BBox(left, bottom, mid, midtop)
+    naip_rectangles.append(bottom_left)
+    top_left = ee.Geometry.BBox(left, midtop, mid, top)
+    naip_rectangles.append(top_left)
+    bottom_right = ee.Geometry.BBox(mid, bottom, right, midtop)
+    naip_rectangles.append(bottom_right)
+    top_right = ee.Geometry.BBox(mid, midtop, right, top)
+    naip_rectangles.append(top_right)
+    # print("naip_rectangles",naip_rectangles)
 
-    # print("num_rectangles",len(naip_rectangles))
-    
-
+    # collection = collection.toList(collection.size())
+    # print("getting naip images")
     # get naip images for each rectangle
     for i in range(len(naip_rectangles)):
-        # print("rectangle number",i)
-        imgs_region = ee.Image(collection.getRegion(naip_rectangles[i],scale=20))
-        # print("got imgs_region")
-
-        # number of images in the region
-        # num_imgs = len(imgs_region.getInfo()) -1
-        # print("num_imgs",num_imgs)
-
-        # complete path name and get first image since it is the most recent
-        try:
-            img = ee.Image('USDA/NAIP/DOQQ/'+imgs_region.getInfo()[1][0])
-        except Exception as e:
-            print("Image unavailable", e)
-            continue
         
-        # img_id = imgs_region.getInfo()[1][0]
-        # print("got img")
+        planet_col = collection.select('R', 'G', 'B').first()
 
         try:
             # get url for img
             try:
-                url = img.getThumbURL({'bands': ['R','G','B'], 'scale': 1, 'format': 'jpg',
-                                            'crs': 'EPSG:4326', 'region': naip_rectangles[i], 'min': 0, 'max': 255})
+                url = planet_col.getThumbURL({'min': 64, 'max': 5454, 'dimensions': 512,'gamma':1.8, 'region': naip_rectangles[i], 'format':'jpg','crs':'EPSG:4326'})
                 # print(url)
-            except: # if RGB bands are not available, try NRG bands -- REMOVE THIS TRY EXCEPT BLOCK IF YOU WANT TO DOWNLOAD RGB BANDS ONLY and vice versa, keep the exception case for errors
-                try:
-                    url = img.getThumbURL({'bands': ['N','G','R'], 'scale': 1, 'format': 'jpg',
-                                                'crs': 'EPSG:4326', 'region': naip_rectangles[i], 'min': 0, 'max': 255})
-                    # print(url)
-                except Exception as e:
-                    print("No RGB or NRG bands available: ",e)
-                    print("Skipping Image")
-                    continue
+            except Exception as e:
+                print("No RGB or NRG bands available: ",e)
+                print("Skipping Image")
+                continue
 
             # download img
             # new save path = old save path/fname/rectangle number

@@ -247,16 +247,7 @@ for i in loop:
     numnbrs = np.mean(numnbrs)+len(l_inds)
     l_array.append(len(l_inds))
     max_size.append(numnbrs) 
-# plt.figure()
-# plt.plot(loop, max_size,label="sum")
-# plt.plot(loop, l_array,label="large polys")
-# plt.plot(loop, n_array,label="mean of neighbors ")
-# plt.title('Choose a threshold')
-# plt.xlabel('Percentile')
-# plt.ylabel('Number of search polygons')
-# plt.grid()
-# plt.legend()
-# plt.savefig('threshold.pdf')
+
 print("optimal threshold : "+ str(loop[np.argmin(max_size)]))
 print("optimal maxradius: "+str(radius[int(len(radii)*loop[np.argmin(max_size)])]))
 print("max maxradius : "+ str(radius[-1]))
@@ -282,6 +273,7 @@ savedpolygons=[]
 savedpolygons2={}
 starttime = time.time()
 for i in range(len(flattened)):
+    # Currently for NAIP
     halfwidth=0.0012
     other_points=[]
     cent=flattened[i].tolist()

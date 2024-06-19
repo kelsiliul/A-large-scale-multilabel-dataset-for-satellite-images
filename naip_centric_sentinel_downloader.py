@@ -119,28 +119,28 @@ def get_patch(collection, coords, bands=None, scale=None, save_path=None, fname=
     img_id = imgs_region.getInfo()[1][0]
     print("img_id",img_id)
 
-    try:
-        # get url for img
-        try:
-            url = img.getThumbURL({'bands': ['R','G','B'], 'scale': 1, 'format': 'jpg',
-                                        'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
-            print(url)
-        except: # if RGB bands are not available, try NRG bands -- REMOVE THIS TRY EXCEPT BLOCK IF YOU WANT TO DOWNLOAD RGB BANDS ONLY and vice versa, keep the exception case for errors
-            try:
-                url = img.getThumbURL({'bands': ['N','G','R'], 'scale': 1, 'format': 'jpg',
-                                            'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
-                print(url)
-            except Exception as e:
-                print("No RGB or NRG bands available: ",e)
-                print("Skipping Image")
-                return None
+    # try:
+    #     # get url for img
+    #     try:
+    #         url = img.getThumbURL({'bands': ['R','G','B'], 'scale': 1, 'format': 'jpg',
+    #                                     'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
+    #         print(url)
+    #     except: # if RGB bands are not available, try NRG bands -- REMOVE THIS TRY EXCEPT BLOCK IF YOU WANT TO DOWNLOAD RGB BANDS ONLY and vice versa, keep the exception case for errors
+    #         try:
+    #             url = img.getThumbURL({'bands': ['N','G','R'], 'scale': 1, 'format': 'jpg',
+    #                                         'crs': 'EPSG:4326', 'region': region, 'min': 0, 'max': 255})
+    #             print(url)
+    #         except Exception as e:
+    #             print("No RGB or NRG bands available: ",e)
+    #             print("Skipping Image")
+    #             return None
 
-        # download img
-        # fname = imgs_region.getInfo()[num_imgs][0]+'.jpg'
-        urllib.request.urlretrieve(url, join(save_path, fname))
-        print("downloaded at ",join(save_path, fname))
-    except Exception as e:
-        print("Image unavailable", e)
+    #     # download img
+    #     # fname = imgs_region.getInfo()[num_imgs][0]+'.jpg'
+    #     urllib.request.urlretrieve(url, join(save_path, fname))
+    #     print("downloaded at ",join(save_path, fname))
+    # except Exception as e:
+    #     print("Image unavailable", e)
 
     get_corresponding_sentinel(img_id, region, save_path, fname)
 
@@ -156,10 +156,11 @@ def get_corresponding_sentinel(img_id, region, save_path, fname):
     if isfile(join(save_path, fname)):
         print("sentinel file exists")
         return None
-    collection = ee.ImageCollection('COPERNICUS/S2').filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 2))
+    collection = ee.ImageCollection('COPERNICUS/S2').filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
     collection = collection.map(cloudmask457)
 
     image = collection.median().select(['B4','B3','B2'])
+
     center = region.centroid().getInfo()['coordinates']
     width = region.bounds().getInfo()['coordinates'][0][2][0] - region.bounds().getInfo()['coordinates'][0][0][0]
     height = region.bounds().getInfo()['coordinates'][0][2][1] - region.bounds().getInfo()['coordinates'][0][0][1]
